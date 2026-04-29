@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Gestor de Pedidos — WiseRoyal</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f0; color: #1a1a2e; }
+.app { max-width: 900px; margin: 0 auto; padding: 2rem 1.5rem; }
+.header { display: flex; align-items: center; gap: 12px; margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid #e0e0d8; }
+.logo { width: 36px; height: 36px; background: #1a1a2e; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 11px; font-weight: 500; }
+.header h1 { font-size: 17px; font-weight: 500; color: #1a1a2e; }
+.header span { font-size: 13px; color: #666; }
+.status-dot { width: 8px; height: 8px; border-radius: 50%; background: #d1d5db; display: inline-block; margin-right: 6px; }
+.status-dot.ok { background: #16a34a; }
+.status-dot.err { background: #dc2626; }
+.status-bar { font-size: 12px; color: #666; margin-bottom: 1rem; display: flex; align-items: center; gap: 6px; }
+.tabs { display: flex; gap: 4px; margin-bottom: 1.5rem; background: #ebebE4; border-radius: 8px; padding: 3px; }
+.tab { flex: 1; padding: 7px 12px; font-size: 13px; border: none; background: transparent; cursor: pointer; border-radius: 6px; color: #666; font-family: inherit; transition: all 0.15s; }
+.tab.active { background: #fff; color: #1a1a2e; font-weight: 500; border: 0.5px solid #ddd; }
+.section { margin-bottom: 1.5rem; }
+.section-title { font-size: 12px; font-weight: 500; color: #666; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 10px; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+.field { display: flex; flex-direction: column; gap: 4px; }
+.field label { font-size: 12px; color: #666; }
+.field input, .field select { font-family: inherit; font-size: 13px; padding: 7px 10px; border: 1px solid #ddd; border-radius: 6px; background: #fff; color: #1a1a2e; outline: none; }
+.field input:focus, .field select:focus { border-color: #1a1a2e; }
+.lines-header { display: grid; grid-template-columns: 36px 170px 100px 70px 80px 1fr 28px; gap: 8px; padding: 6px 8px; background: #ebebE4; border-radius: 6px; font-size: 11px; color: #666; font-weight: 500; margin-bottom: 6px; }
+.line-row { display: grid; grid-template-columns: 36px 170px 100px 70px 80px 1fr 28px; gap: 8px; padding: 6px 8px; border: 1px solid #e0e0d8; border-radius: 6px; margin-bottom: 6px; align-items: center; background: #fff; }
+.line-row input, .line-row select { font-size: 12px; font-family: inherit; padding: 4px 6px; border: 1px solid #ddd; border-radius: 4px; background: #fff; }
+.line-num { font-size: 12px; color: #999; text-align: center; }
+.btn-del { width: 24px; height: 24px; border: none; background: none; cursor: pointer; color: #999; font-size: 16px; display: flex; align-items: center; justify-content: center; border-radius: 4px; }
+.btn-del:hover { background: #fee2e2; color: #dc2626; }
+.add-line { display: flex; align-items: center; gap: 8px; padding: 8px; border: 1px dashed #ccc; border-radius: 6px; cursor: pointer; color: #666; font-size: 13px; background: none; width: 100%; font-family: inherit; }
+.add-line:hover { background: #f5f5f0; }
+.actions { display: flex; gap: 8px; margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid #e0e0d8; }
+.btn-primary { flex: 1; padding: 10px 16px; background: #1a1a2e; color: #fff; border: none; border-radius: 8px; font-size: 13px; font-weight: 500; cursor: pointer; font-family: inherit; }
+.btn-primary:hover { background: #2d2d4e; }
+.btn-sec { padding: 10px 16px; border: 1px solid #ccc; background: transparent; color: #1a1a2e; border-radius: 8px; font-size: 13px; cursor: pointer; font-family: inherit; }
+.btn-sec:hover { background: #f5f5f0; }
+.db-panel { background: #ebebE4; border-radius: 10px; padding: 1rem; }
+.db-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.db-table th { text-align: left; padding: 6px 8px; font-size: 11px; color: #666; border-bottom: 1px solid #ddd; font-weight: 500; }
+.db-table td { padding: 7px 8px; border-bottom: 1px solid #e0e0d8; color: #1a1a2e; }
+.db-table tr:last-child td { border-bottom: none; }
+.badge { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 20px; background: #dbeafe; color: #1d4ed8; }
+.hint { font-size: 12px; color: #666; padding: 8px 12px; background: #ebebE4; border-radius: 6px; margin-bottom: 12px; border-left: 3px solid #1a1a2e; }
+.loading { text-align: center; padding: 20px; color: #666; font-size: 13px; }
+.spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid #ddd; border-top-color: #1a1a2e; border-radius: 50%; animation: spin 0.7s linear infinite; margin-right: 8px; vertical-align: middle; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.toast { position: fixed; bottom: 16px; right: 16px; background: #1a1a2e; color: #fff; padding: 10px 16px; border-radius: 8px; font-size: 13px; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 999; }
+.toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+<div class="app">
+<div class="header">
+  <div class="logo">WR</div>
+  <div style="flex:1">
+    <h1>Gestor de Pedidos</h1>
+    <span>WiseRoyal — conectado a Google Sheets</span>
+  </div>
+  <div class="status-bar">
+    <span class="status-dot" id="sdot"></span>
+    <span id="sstatus">Conectando...</span>
+    <button onclick="reloadData()" style="font-size:11px;padding:3px 8px;border:1px solid #ccc;border-radius:4px;background:none;cursor:pointer;font-family:inherit">↺ Sync</button>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" id="tab-btn-form" onclick="showTab('form')">Nuevo pedido</button>
+  <button class="tab" id="tab-btn-clientes" onclick="showTab('clientes')">Clientes</button>
+  <button class="tab" id="tab-btn-productos" onclick="showTab('productos')">Productos</button>
+</div>
+
+<!-- FORM -->
+<div id="tab-form">
+  <div class="section">
+    <div class="section-title">Cabecera del pedido</div>
+    <div class="grid3">
+      <div class="field"><label>Source Document</label><input id="f_source" placeholder="PED-INT-001"/></div>
+      <div class="field"><label>PO Number</label><input id="f_po" placeholder="PO-2026-0001"/></div>
+      <div class="field"><label>Order Type</label>
+        <select id="f_ordertype"><option value="INTERNACIONAL">INTERNACIONAL</option><option value="NACIONAL">NACIONAL</option><option value="DROPSHIPPING">DROPSHIPPING</option></select>
+      </div>
+      <div class="field"><label>Order Date</label><input type="date" id="f_orderdate"/></div>
+      <div class="field"><label>Required Date</label><input type="date" id="f_reqdate"/></div>
+      <div class="field"><label>Cancel Date</label><input type="date" id="f_canceldate" value="9999-12-31"/></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Cliente <span class="badge" style="text-transform:none;letter-spacing:0">Google Sheets</span></div>
+    <div class="grid2" style="margin-bottom:10px">
+      <div class="field"><label>Seleccionar cliente</label>
+        <select id="f_cliente_sel" onchange="fillCliente()"><option value="">-- Elige un cliente --</option></select>
+      </div>
+      <div class="field"><label>Cust ID (WMS)</label><input id="f_custid" placeholder="430000001"/></div>
+    </div>
+    <div class="grid2">
+      <div class="field"><label>Nombre completo</label><input id="f_name"/></div>
+      <div class="field"><label>Ship ID</label><input id="f_shipid"/></div>
+      <div class="field"><label>Dirección (Calle)</label><input id="f_addr1"/></div>
+      <div class="field"><label>Piso / Puerta</label><input id="f_addr2"/></div>
+      <div class="field"><label>Ciudad</label><input id="f_city"/></div>
+      <div class="field"><label>Provincia / Region</label><input id="f_state"/></div>
+      <div class="field"><label>Código Postal</label><input id="f_postal"/></div>
+      <div class="field"><label>País (ISO2)</label><input id="f_country" maxlength="2"/></div>
+      <div class="field"><label>Persona de contacto</label><input id="f_attn"/></div>
+      <div class="field"><label>Teléfono</label><input id="f_phone"/></div>
+      <div class="field"><label>Email</label><input id="f_email"/></div>
+      <div class="field"><label>Transportista</label>
+        <select id="f_carrier"><option>DHL</option><option>UPS</option><option>FEDEX</option><option>SEUR</option><option>GLS</option><option>MRW</option><option>CORREOS</option></select>
+      </div>
+    </div>
+    <div class="field" style="margin-top:10px"><label>Remarks</label><input id="f_remarks" placeholder="PEDIDO URGENTE"/></div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Líneas de pedido <span class="badge" style="text-transform:none;letter-spacing:0">Google Sheets</span></div>
+    <div class="lines-header">
+      <span>Línea</span><span>Artículo</span><span>UOM</span><span>Cantidad</span><span>Precio</span><span>Descripción</span><span></span>
+    </div>
+    <div id="lines-container"></div>
+    <button class="add-line" onclick="addLine()">+ Añadir línea</button>
+  </div>
+
+  <div class="actions">
+    <button class="btn-sec" onclick="clearForm()">Limpiar</button>
+    <button class="btn-primary" onclick="exportCSV()">Exportar CSV</button>
+  </div>
+</div>
+
+<!-- CLIENTES -->
+<div id="tab-clientes" style="display:none">
+  <div class="hint">Los clientes se guardan en tu Google Sheet y son visibles para todo el equipo.</div>
+  <div class="db-panel">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <span style="font-size:14px;font-weight:500">Clientes — Google Sheets</span>
+      <span id="cli-count" class="badge">...</span>
+    </div>
+    <div id="cli-loading" class="loading"><span class="spinner"></span>Cargando clientes...</div>
+    <table class="db-table" id="cli-table" style="display:none">
+      <thead><tr><th>ID</th><th>Nombre</th><th>Ciudad</th><th>País</th><th></th></tr></thead>
+      <tbody id="cli-body"></tbody>
+    </table>
+    <div style="margin-top:16px;border-top:1px solid #ddd;padding-top:14px">
+      <div style="font-size:13px;font-weight:500;margin-bottom:10px">Añadir nuevo cliente</div>
+      <div class="grid3">
+        <div class="field"><label>Cust ID *</label><input id="nc_id" placeholder="430000003"/></div>
+        <div class="field"><label>Nombre *</label><input id="nc_name" placeholder="EMPRESA SL"/></div>
+        <div class="field"><label>Calle</label><input id="nc_addr1" placeholder="Calle 1"/></div>
+        <div class="field"><label>Ciudad</label><input id="nc_city" placeholder="MADRID"/></div>
+        <div class="field"><label>Región</label><input id="nc_state" placeholder="MAD"/></div>
+        <div class="field"><label>Código Postal</label><input id="nc_postal" placeholder="28001"/></div>
+        <div class="field"><label>País ISO2</label><input id="nc_country" placeholder="ES" maxlength="2"/></div>
+        <div class="field"><label>Teléfono</label><input id="nc_phone" placeholder="+34..."/></div>
+        <div class="field"><label>Email</label><input id="nc_email" placeholder="pedidos@..."/></div>
+      </div>
+      <button class="btn-primary" style="margin-top:12px;max-width:200px" id="btn-save-cli" onclick="addCliente()">Guardar en Sheets</button>
+    </div>
+  </div>
+</div>
+
+<!-- PRODUCTOS -->
+<div id="tab-productos" style="display:none">
+  <div class="hint">Los productos se guardan en tu Google Sheet y son visibles para todo el equipo.</div>
+  <div class="db-panel">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <span style="font-size:14px;font-weight:500">Productos — Google Sheets</span>
+      <span id="prod-count" class="badge">...</span>
+    </div>
+    <div id="prod-loading" class="loading"><span class="spinner"></span>Cargando productos...</div>
+    <table class="db-table" id="prod-table" style="display:none">
+      <thead><tr><th>Código</th><th>Descripción</th><th>UOM</th><th>Precio</th><th></th></tr></thead>
+      <tbody id="prod-body"></tbody>
+    </table>
+    <div style="margin-top:16px;border-top:1px solid #ddd;padding-top:14px">
+      <div style="font-size:13px;font-weight:500;margin-bottom:10px">Añadir nuevo producto</div>
+      <div class="grid2">
+        <div class="field"><label>Código artículo (WMS) *</label><input id="np_code" placeholder="ART-00001"/></div>
+        <div class="field"><label>Descripción *</label><input id="np_desc" placeholder="Nombre del producto"/></div>
+        <div class="field"><label>UOM</label>
+          <select id="np_uom">
+            <option value="UN">UN — unidad</option>
+            <option value="BLISTER">BLISTER</option>
+            <option value="CARTON">CARTON</option>
+            <option value="CAJA">CAJA</option>
+          </select>
+        </div>
+        <div class="field"><label>Precio unitario</label><input id="np_price" type="number" step="0.01" placeholder="0.00"/></div>
+      </div>
+      <button class="btn-primary" style="margin-top:12px;max-width:200px" id="btn-save-prod" onclick="addProducto()">Guardar en Sheets</button>
+    </div>
+  </div>
+</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const API = 'https://script.google.com/macros/s/AKfycbxSGAz0RUTKLegL884nC_WkgAGsv8eLl_lFzNIt6JlavYtA3vs0HFRXi_Z3mpNF87bbQA/exec';
+
+let clientes = [];
+let productos = [];
+let lineCount = 0;
+
+const UOMS = [{val:'UN',label:'UN — unidad'},{val:'BLISTER',label:'BLISTER'},{val:'CARTON',label:'CARTON'},{val:'CAJA',label:'CAJA'}];
+function uomOpts(sel){return UOMS.map(u=>`<option value="${u.val}"${u.val===sel?' selected':''}>${u.label}</option>`).join('');}
+
+function toast(msg, dur=2500){
+  const el=document.getElementById('toast');
+  el.textContent=msg;el.classList.add('show');
+  setTimeout(()=>el.classList.remove('show'), dur);
+}
+
+function setStatus(ok, msg){
+  const dot=document.getElementById('sdot');
+  const st=document.getElementById('sstatus');
+  dot.className='status-dot'+(ok===true?' ok':ok===false?' err':'');
+  st.textContent=msg;
+}
+
+function apiFetch(tab){
+  return new Promise((resolve, reject) => {
+    const cb = 'cb_'+Date.now();
+    const script = document.createElement('script');
+    window[cb] = (data) => { delete window[cb]; script.remove(); resolve(data); };
+    script.onerror = () => reject(new Error('JSONP error'));
+    script.src = API + '?tab=' + tab + '&callback=' + cb;
+    document.head.appendChild(script);
+  });
+}
+
+async function apiPost(body){
+  const res = await fetch(API, {method:'POST', redirect:'follow', body: JSON.stringify(body)});
+  return await res.json();
+}
+
+async function reloadData(){
+  setStatus(null,'Sincronizando...');
+  try {
+    const [clis, prods] = await Promise.all([apiFetch('Clientes'), apiFetch('Productos')]);
+    if(clis.error || prods.error) throw new Error(clis.error||prods.error);
+    clientes = clis;
+    productos = prods;
+    fillClienteSelect();
+    fillProdSelects();
+    setStatus(true, 'Conectado · '+clientes.length+' clientes · '+productos.length+' productos');
+    renderCli();
+    renderProd();
+  } catch(e){
+    setStatus(false,'Error de conexión — revisa la URL del script');
+    toast('Error al conectar con Google Sheets');
+  }
+}
+
+function showTab(t){
+  ['form','clientes','productos'].forEach(id=>{
+    document.getElementById('tab-'+id).style.display=id===t?'block':'none';
+    document.getElementById('tab-btn-'+id).classList.toggle('active',id===t);
+  });
+}
+
+function fillClienteSelect(){
+  const sel=document.getElementById('f_cliente_sel');
+  const cur=sel.value;
+  sel.innerHTML='<option value="">-- Elige un cliente --</option>';
+  clientes.forEach(c=>{
+    const o=document.createElement('option');
+    o.value=c.id;
+    o.textContent=c.name+' ('+c.id+')';
+    sel.appendChild(o);
+  });
+  sel.value=cur;
+}
+
+function fillCliente(){
+  const id=document.getElementById('f_cliente_sel').value;
+  if(!id)return;
+  const c=clientes.find(x=>String(x.id)===String(id));if(!c)return;
+  document.getElementById('f_custid').value=c.id;
+  document.getElementById('f_shipid').value=c.id;
+  document.getElementById('f_name').value=c.name||'';
+  document.getElementById('f_addr1').value=c.addr1||'';
+  document.getElementById('f_addr2').value=c.addr2||'';
+  document.getElementById('f_city').value=c.city||'';
+  document.getElementById('f_state').value=c.state||'';
+  document.getElementById('f_postal').value=c.postal||'';
+  document.getElementById('f_country').value=c.country||'';
+  document.getElementById('f_phone').value=c.phone||'';
+  document.getElementById('f_email').value=c.email||'';
+}
+
+function fillProdSelects(){
+  document.querySelectorAll('.lpsel').forEach(sel=>{
+    const cur=sel.value;
+    sel.innerHTML='<option value="">-- Artículo --</option>';
+    productos.forEach(p=>{
+      const o=document.createElement('option');
+      o.value=p.code;
+      o.textContent=p.code+' — '+String(p.desc).substring(0,20);
+      sel.appendChild(o);
+    });
+    sel.value=cur;
+  });
+}
+
+function addLine(){
+  lineCount++;const n=lineCount;
+  const container=document.getElementById('lines-container');
+  const row=document.createElement('div');
+  row.className='line-row';row.id='line-'+n;
+  row.innerHTML=`
+    <span class="line-num">${n}</span>
+    <select class="lpsel" onchange="fillProd(${n})"><option value="">-- Artículo --</option></select>
+    <select id="lu-${n}">${uomOpts('UN')}</select>
+    <input type="number" id="lq-${n}" value="1" min="1" style="width:100%"/>
+    <input type="number" id="lp-${n}" step="0.01" placeholder="0.00" style="width:100%"/>
+    <input id="ld-${n}" placeholder="Descripción" style="width:100%;font-size:12px"/>
+    <button class="btn-del" onclick="removeLine(${n})">×</button>
+  `;
+  container.appendChild(row);
+  fillProdSelects();
+}
+
+function fillProd(n){
+  const sel=document.querySelector('#line-'+n+' .lpsel');
+  const p=productos.find(x=>x.code===sel.value);if(!p)return;
+  document.getElementById('lu-'+n).value=p.uom;
+  document.getElementById('lp-'+n).value=p.price;
+  document.getElementById('ld-'+n).value=p.desc;
+}
+
+function removeLine(n){const el=document.getElementById('line-'+n);if(el)el.remove();}
+
+function clearForm(){
+  ['f_source','f_po','f_custid','f_shipid','f_name','f_addr1','f_addr2','f_city','f_state','f_postal','f_country','f_attn','f_phone','f_email','f_remarks'].forEach(id=>{
+    const el=document.getElementById(id);if(el)el.value='';
+  });
+  document.getElementById('f_cliente_sel').value='';
+  document.getElementById('lines-container').innerHTML='';
+  lineCount=0;
+  document.getElementById('f_orderdate').value=new Date().toISOString().split('T')[0];
+}
+
+function fmtDate(iso){if(!iso)return'';const[y,m,d]=iso.split('-');return d+'/'+m+'/'+y;}
+
+function exportCSV(){
+  const g=id=>(document.getElementById(id)||{}).value||'';
+  const src=g('f_source'),po=g('f_po');
+  const rows=document.querySelectorAll('.line-row');
+  if(!rows.length){toast('Añade al menos una línea');return;}
+  const hdr='Source Document,PO Number,Order Date,Required Date,Cancel Date,Cust ID,Ship ID,Name,Address1,Address2,Address3,City,State,Postal Code,Country,Attention To,Phone,Email,Carrier,Remarks,Line,Item No,UOM,Qty Ordered,Qty BO,Unit Price,Description,OrderType';
+  const lines=[hdr];
+  rows.forEach((row,i)=>{
+    const n=row.id.replace('line-','');
+    const itemno=row.querySelector('.lpsel').value;
+    const uom=document.getElementById('lu-'+n).value;
+    const qty=document.getElementById('lq-'+n).value;
+    const price=parseFloat(document.getElementById('lp-'+n).value||0).toFixed(2);
+    const desc=document.getElementById('ld-'+n).value;
+    const cols=[src,po,fmtDate(g('f_orderdate')),fmtDate(g('f_reqdate')),fmtDate(g('f_canceldate'))||'31/12/9999',g('f_custid'),g('f_shipid'),g('f_name'),g('f_addr1'),g('f_addr2'),'',g('f_city'),g('f_state'),g('f_postal'),g('f_country').toUpperCase(),g('f_attn'),g('f_phone'),g('f_email'),g('f_carrier'),g('f_remarks'),i+1,itemno,uom,qty,'0',price,desc,g('f_ordertype')];
+    lines.push(cols.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(','));
+  });
+  const blob=new Blob(['\uFEFF'+lines.join('\n')],{type:'text/csv;charset=utf-8;'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download=(src||'pedido')+'_'+po+'.csv';a.click();URL.revokeObjectURL(url);
+  toast('CSV exportado');
+}
+
+function renderCli(){
+  const loading=document.getElementById('cli-loading');
+  const table=document.getElementById('cli-table');
+  const tbody=document.getElementById('cli-body');
+  loading.style.display='none';
+  table.style.display='table';
+  tbody.innerHTML='';
+  clientes.forEach((c,i)=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td>${c.id}</td><td>${c.name}</td><td>${c.city}</td><td>${c.country}</td><td><button class="btn-del" onclick="delCliente(${i})">×</button></td>`;
+    tbody.appendChild(tr);
+  });
+  document.getElementById('cli-count').textContent=clientes.length+' clientes';
+}
+
+function renderProd(){
+  const loading=document.getElementById('prod-loading');
+  const table=document.getElementById('prod-table');
+  const tbody=document.getElementById('prod-body');
+  loading.style.display='none';
+  table.style.display='table';
+  tbody.innerHTML='';
+  productos.forEach((p,i)=>{
+    const uomLabel=UOMS.find(u=>u.val===p.uom)?.label||p.uom;
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td>${p.code}</td><td>${p.desc}</td><td>${uomLabel}</td><td>${p.price}€</td><td><button class="btn-del" onclick="delProducto(${i})">×</button></td>`;
+    tbody.appendChild(tr);
+  });
+  document.getElementById('prod-count').textContent=productos.length+' productos';
+}
+
+async function addCliente(){
+  const id=document.getElementById('nc_id').value.trim();
+  const name=document.getElementById('nc_name').value.trim();
+  if(!id||!name){toast('ID y nombre son obligatorios');return;}
+  const btn=document.getElementById('btn-save-cli');
+  btn.textContent='Guardando...';btn.disabled=true;
+  const data={id,name,addr1:document.getElementById('nc_addr1').value,addr2:'',city:document.getElementById('nc_city').value,state:document.getElementById('nc_state').value,postal:document.getElementById('nc_postal').value,country:document.getElementById('nc_country').value.toUpperCase(),phone:document.getElementById('nc_phone').value,email:document.getElementById('nc_email').value};
+  try{
+    await apiPost({tab:'Clientes',action:'add',data});
+    await reloadData();
+    ['nc_id','nc_name','nc_addr1','nc_city','nc_state','nc_postal','nc_country','nc_phone','nc_email'].forEach(id=>document.getElementById(id).value='');
+    toast('Cliente guardado en Google Sheets ✓');
+  }catch(e){toast('Error al guardar');}
+  btn.textContent='Guardar en Sheets';btn.disabled=false;
+}
+
+async function delCliente(i){
+  if(!confirm('¿Eliminar este cliente de Google Sheets?'))return;
+  try{
+    await apiPost({tab:'Clientes',action:'delete',data:{id:clientes[i].id}});
+    await reloadData();
+    toast('Cliente eliminado');
+  }catch(e){toast('Error al eliminar');}
+}
+
+async function addProducto(){
+  const code=document.getElementById('np_code').value.trim();
+  const desc=document.getElementById('np_desc').value.trim();
+  if(!code||!desc){toast('Código y descripción son obligatorios');return;}
+  const btn=document.getElementById('btn-save-prod');
+  btn.textContent='Guardando...';btn.disabled=true;
+  const data={code,desc,uom:document.getElementById('np_uom').value,price:parseFloat(document.getElementById('np_price').value||0).toFixed(2)};
+  try{
+    await apiPost({tab:'Productos',action:'add',data});
+    await reloadData();
+    ['np_code','np_desc','np_price'].forEach(id=>document.getElementById(id).value='');
+    toast('Producto guardado en Google Sheets ✓');
+  }catch(e){toast('Error al guardar');}
+  btn.textContent='Guardar en Sheets';btn.disabled=false;
+}
+
+async function delProducto(i){
+  if(!confirm('¿Eliminar este producto de Google Sheets?'))return;
+  try{
+    await apiPost({tab:'Productos',action:'delete',data:{code:productos[i].code}});
+    await reloadData();
+    toast('Producto eliminado');
+  }catch(e){toast('Error al eliminar');}
+}
+
+document.getElementById('f_orderdate').value=new Date().toISOString().split('T')[0];
+addLine();
+reloadData();
+</script>
+</body>
+</html>
